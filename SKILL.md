@@ -85,8 +85,9 @@ Mint conventions:
   language. The card writes it into its own title and, when it is omitted,
   falls back to that language's default name (小花 / Hanako / 花子 / 하나코).
 - `submitted` belongs to the card, not to the mint: after Submit the card
-  writes its own record of the set (`answers`, `at`) into that state field, so
-  a reopened card shows what was answered. Do not send it.
+  writes its own record of the set (`answers`, `at` — a local `YYYY-MM-DD HH:MM`
+  stamp) into that state field, so a reopened card shows what was answered. Do
+  not send it.
 - Questions without `options` render a free-text field; with `options` the
   free text becomes an optional supplement or custom answer.
 - Keep question ids stable: they are echoed in the answer and let you match

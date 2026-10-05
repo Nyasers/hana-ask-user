@@ -360,9 +360,10 @@ input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px soli
     elDone.appendChild(meta);
   }
 
-  function nowClock() {
+  function nowStamp() {
     var d = new Date();
-    return (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
 
   function persistSubmitted(record) {
@@ -385,7 +386,7 @@ input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px soli
     if (!emitOk) return;
     var answers = collectAnswers();
     var payload = { callId: callId, answers: answers };
-    var record = { answers: answers, at: nowClock() };
+    var record = { answers: answers, at: nowStamp() };
     var envelopeDone = function (envelope) {
       var ok = envelope && envelope.ok === true;
       if (ok) {

@@ -355,13 +355,15 @@ input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px soli
     var meta = document.createElement('div');
     meta.className = 'ask-meta';
     var stamp = document.createElement('span');
-    stamp.textContent = t('answeredAt', { time: submitted.at });
+    stamp.textContent = t('answeredAt', { time: stampText(submitted.at) });
     meta.appendChild(stamp);
     elDone.appendChild(meta);
   }
 
-  function nowStamp() {
-    var d = new Date();
+  // `at` is stored as epoch milliseconds; records written before that store a formatted string.
+  function stampText(v) {
+    if (typeof v !== 'number' || !isFinite(v)) return typeof v === 'string' ? v : '';
+    var d = new Date(v);
     var p = function (n) { return (n < 10 ? '0' : '') + n; };
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
@@ -386,7 +388,7 @@ input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px soli
     if (!emitOk) return;
     var answers = collectAnswers();
     var payload = { callId: callId, answers: answers };
-    var record = { answers: answers, at: nowStamp() };
+    var record = { answers: answers, at: Date.now() };
     var envelopeDone = function (envelope) {
       var ok = envelope && envelope.ok === true;
       if (ok) {

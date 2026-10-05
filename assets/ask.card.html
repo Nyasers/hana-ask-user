@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hana Ask User</title>
+</head>
+<body>
+<script type="application/json" data-card-manifest>
+{
+  "spec": "1.0",
+  "display": { "styleProfile": "hana" },
+  "stateSchema": {
+    "type": "object",
+    "properties": {
+      "uiLanguage": { "type": "string" },
+      "callId": { "type": "string" },
+      "header": { "type": "string" },
+      "asker": { "type": "string" },
+      "questions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "question": { "type": "string" },
+            "header": { "type": "string" },
+            "multiSelect": { "type": "boolean" },
+            "options": { "type": "array", "items": { "type": "object" } }
+          }
+        }
+      },
+      "submitted": { "type": "object" }
+    }
+  }
+}
+</script>
+<script type="application/json" data-card-state>
+{
+  "uiLanguage": "zh",
+  "callId": "deploy-check",
+  "header": "发布检查点",
+  "questions": [
+    {
+      "id": "regression",
+      "question": "发布前要先跑一轮回归吗？",
+      "header": "发布方式",
+      "options": [
+        { "label": "先跑回归（推荐）", "description": "多花十分钟，换一份安心" },
+        { "label": "直接发布", "description": "赶时间，出问题再回滚" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "note",
+      "question": "这次发布有什么要特别留意的？",
+      "multiSelect": false
+    }
+  ]
+}
+</script>
+<h2 id="ask-card-label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">Hanako Asks</h2>
+<style>
+.ask-column{font-family:var(--font-ui);max-width:460px;margin:0 auto;padding:12px 16px}
+.ask-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:24px 0 4px}
+.ask-title{font-family:var(--font-serif);font-size:1.35rem;line-height:1.25;font-weight:500;color:var(--text);margin:0}
+.ask-badge{flex:none;font-size:0.75rem;font-weight:500;color:var(--accent-hover);background:var(--accent-light);padding:4px 10px;border-radius:calc(5px * var(--corner-radius-scale,1));corner-shape:squircle;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ask-badge.is-done{color:#4A6B4A;background:rgba(74,107,74,0.08)}
+.ask-q{margin:18px 0 0}
+.ask-q-header{font-size:0.75rem;color:var(--text-muted);margin:0 0 4px}
+.ask-q-text{font-size:0.95rem;line-height:1.6;color:var(--text);margin:0}
+.ask-hint{font-size:0.72rem;color:var(--text-muted);margin:2px 0 0}
+.ask-q-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.ask-q.is-skipped .ask-q-text,.ask-q.is-skipped .ask-opt,.ask-q.is-skipped .ask-custom{opacity:0.45;pointer-events:none}
+.ask-q.is-skipped{position:relative}
+.ask-q .ask-skip-banner{display:none;font-size:0.75rem;color:#9D5F4D;background:rgba(157,95,77,0.08);border-radius:calc(4px * var(--corner-radius-scale,1));corner-shape:squircle;padding:3px 8px;margin-top:8px}
+.ask-q.is-skipped .ask-skip-banner{display:inline-block}
+.ask-opt{display:flex;align-items:flex-start;gap:10px;padding:9px 10px;margin-top:8px;border:0.5px solid var(--border);border-radius:calc(8px * var(--corner-radius-scale,1));corner-shape:squircle;cursor:pointer;background:transparent}
+.ask-opt:hover{background:var(--accent-light)}
+.ask-opt input{appearance:none;-webkit-appearance:none;flex:none;margin:2px 0 0;width:16px;height:16px;border:1px solid var(--border);border-radius:50%;background:var(--bg-card);cursor:pointer;position:relative}
+.ask-opt input[type="checkbox"]{border-radius:calc(4px * var(--corner-radius-scale,1));corner-shape:squircle}
+.ask-opt input:checked{border-color:var(--accent);background:var(--accent)}
+.ask-opt input[type="radio"]:checked:after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--bg-card)}
+.ask-opt input[type="checkbox"]:checked:after{content:'';position:absolute;left:4px;top:1px;width:4px;height:7px;border:solid var(--bg-card);border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+.ask-opt-label{font-size:0.875rem;line-height:1.5;color:var(--text);font-weight:500}
+.ask-opt-desc{font-size:0.75rem;line-height:1.5;color:var(--text-muted);margin-top:1px}
+.ask-custom{width:100%;box-sizing:border-box;margin-top:8px;border:1px solid var(--border);border-radius:calc(8px * var(--corner-radius-scale,1));corner-shape:squircle;background:var(--bg-card);font-family:var(--font-ui);font-size:0.85rem;color:var(--text);padding:8px 10px;resize:vertical;min-height:34px}
+.ask-custom::placeholder{color:var(--text-muted)}
+.ask-custom:focus,.ask-opt:focus-within{outline:none;border-color:var(--accent)}
+.ask-actions{display:flex;justify-content:space-between;gap:10px;margin-top:22px;flex-wrap:wrap}
+.ask-actions[hidden]{display:none}
+.ask-actions-right{display:flex;gap:10px}
+.ask-pager{font-size:0.75rem;color:var(--text-muted);margin:6px 0 0}
+.ask-submit{border:none;border-radius:calc(8px * var(--corner-radius-scale,1));corner-shape:squircle;background:var(--accent);color:var(--bg-card);padding:8px 18px;font-family:var(--font-ui);font-size:0.875rem;font-weight:500;cursor:pointer}
+.ask-submit:hover{background:var(--accent-hover)}
+.ask-skip{border:0.5px solid var(--border);border-radius:calc(8px * var(--corner-radius-scale,1));corner-shape:squircle;background:transparent;color:var(--text-light);padding:8px 14px;font-family:var(--font-ui);font-size:0.875rem;cursor:pointer}
+.ask-skip:hover{border-color:var(--accent);color:var(--accent)}
+.ask-submit:disabled,.ask-skip:disabled{opacity:0.45;cursor:default}
+.ask-notice{font-size:0.75rem;color:var(--text-muted);margin:10px 0 0;line-height:1.5}
+.ask-notice.is-warn{color:#9D5F4D}
+.ask-answer{margin-top:10px;padding:10px 12px;border-radius:calc(8px * var(--corner-radius-scale,1));corner-shape:squircle;background:var(--bg);border:0.5px solid var(--border)}
+.ask-answer-q{font-size:0.75rem;color:var(--text-muted);margin:0 0 2px}
+.ask-answer-a{font-size:0.875rem;color:var(--text);margin:0;line-height:1.55}
+.ask-meta{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.ask-meta span{font-size:0.75rem;color:var(--text-muted)}
+input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+</style>
+<div class="ask-column">
+  <div class="ask-head">
+    <h2 id="ask-title" class="ask-title"></h2>
+    <span id="ask-badge" class="ask-badge"></span>
+  </div>
+  <p id="ask-pager" class="ask-pager" hidden></p>
+  <div id="ask-live"></div>
+  <div id="ask-done" hidden></div>
+  <div class="ask-actions" id="ask-actions"></div>
+  <p id="ask-notice" class="ask-notice"></p>
+</div>
+<script>
+(function () {
+  var TEXT = {
+    "zh": { "card": "{name}问", "submit": "提交", "skip": "跳过", "resumeQ": "恢复作答", "skippedBanner": "已跳过 · 提交时此题计为空答", "pageOf": "第 {n} 题，共 {total} 题", "prev": "上一题", "next": "下一题", "waiting": "等待回答", "submitted": "已回答", "skipped": "已跳过", "customHint": "补充说明（可选）", "customOnly": "写下你的回答", "multiHint": "可多选", "host": "送达答案需要 Hana 宿主；当前环境只读。", "sent": "答案已送回对话。", "sendFail": "答案没有送达，请重试。", "answeredAt": "回答于 {time}", "invalid": "此卡片的界面语言不受支持。" },
+    "zh-TW": { "card": "{name}問", "submit": "送出", "skip": "略過", "resumeQ": "恢復作答", "skippedBanner": "已略過 · 送出時此題計為空答", "pageOf": "第 {n} 題，共 {total} 題", "prev": "上一題", "next": "下一題", "waiting": "等待回答", "submitted": "已回答", "skipped": "已略過", "customHint": "補充說明（可選）", "customOnly": "寫下你的回答", "multiHint": "可多選", "host": "送達答案需要 Hana 宿主；目前環境唯讀。", "sent": "答案已送回對話。", "sendFail": "答案沒有送達，請再試一次。", "answeredAt": "回答於 {time}", "invalid": "此卡片的介面語言不受支援。" },
+    "en": { "card": "{name} asks", "submit": "Submit", "skip": "Skip", "resumeQ": "Resume this question", "skippedBanner": "Skipped · submits as an empty answer", "pageOf": "Question {n} of {total}", "prev": "Previous", "next": "Next", "waiting": "Awaiting answer", "submitted": "Answered", "skipped": "Skipped", "customHint": "Add a note (optional)", "customOnly": "Write your answer", "multiHint": "Select all that apply", "host": "Delivering answers needs the Hana host; this environment is read-only.", "sent": "Answers delivered to the conversation.", "sendFail": "The answers were not delivered. Try again.", "answeredAt": "Answered at {time}", "invalid": "This card has an unsupported UI language." },
+    "ja": { "card": "{name}の質問", "submit": "送信", "skip": "スキップ", "resumeQ": "この質問に戻る", "skippedBanner": "スキップ済み · 送信時は空の回答になります", "pageOf": "質問 {n} / {total}", "prev": "前へ", "next": "次へ", "waiting": "回答待ち", "submitted": "回答済み", "skipped": "スキップ済み", "customHint": "補足（任意）", "customOnly": "回答を書く", "multiHint": "複数選択可", "host": "回答の送信には Hana ホストが必要です。この環境は読み取り専用です。", "sent": "回答を会話に送りました。", "sendFail": "回答が送れませんでした。もう一度お試しください。", "answeredAt": "{time} に回答", "invalid": "このカードの UI 言語は対応していません。" },
+    "ko": { "card": "{name}의 질문", "submit": "제출", "skip": "건너뛰기", "resumeQ": "이 질문 다시 답하기", "skippedBanner": "건너뜀 · 제출 시 빈 답변으로 기록됩니다", "pageOf": "{total}문항 중 {n}번째", "prev": "이전", "next": "다음", "waiting": "답변 대기 중", "submitted": "답변함", "skipped": "건너뜀", "customHint": "추가 메모(선택)", "customOnly": "답변 입력", "multiHint": "여러 개 선택 가능", "host": "답변 전송에는 Hana 호스트가 필요합니다. 이 환경은 읽기 전용입니다.", "sent": "답변이 대화로 전달되었습니다.", "sendFail": "답변이 전달되지 않았습니다. 다시 시도하세요.", "answeredAt": "{time}에 답변", "invalid": "이 카드의 UI 언어는 지원되지 않습니다." }
+  };
+  var LEGACY = "zh";
+  // The caller's own name wins; otherwise the language's default name.
+  var NAME = { "zh": "小花", "zh-TW": "小花", "en": "Hanako", "ja": "花子", "ko": "하나코" };
+  var snapshot = null;
+  var stateNode = document.querySelector('script[type="application/json"][data-card-state]');
+  if (stateNode) { try { snapshot = JSON.parse(stateNode.textContent || '{}'); } catch (_) { snapshot = null; } }
+  var rawLang = snapshot && typeof snapshot.uiLanguage === 'string' ? snapshot.uiLanguage : LEGACY;
+  var lang = null;
+  if (rawLang === 'zh' || /^zh-(hans|cn|sg)/i.test(rawLang)) lang = 'zh';
+  else if (rawLang === 'zh-TW' || /^zh-(hant|hk)/i.test(rawLang)) lang = 'zh-TW';
+  else if (/^en(-|$)/i.test(rawLang)) lang = 'en';
+  else if (/^ja(-|$)/i.test(rawLang)) lang = 'ja';
+  else if (/^ko(-|$)/i.test(rawLang)) lang = 'ko';
+  var invalidLang = snapshot && typeof snapshot.uiLanguage === 'string' && !lang;
+  var T = TEXT[lang || LEGACY];
+  var asker = snapshot && typeof snapshot.asker === 'string' && snapshot.asker ? snapshot.asker : NAME[lang || LEGACY];
+  function t(key, values) {
+    var s = T[key];
+    if (!s) return key;
+    if (!values) return s;
+    return s.replace(/\{([^}]+)\}/g, function (_, n) { return values[n] !== undefined ? String(values[n]) : ''; });
+  }
+  if (invalidLang) {
+    var msg = document.createElement('p');
+    msg.setAttribute('role', 'alert');
+    msg.style.cssText = 'margin:16px;font-family:system-ui,sans-serif;color:var(--text,#2A2622)';
+    msg.textContent = TEXT.en.invalid;
+    (document.body || document.documentElement).insertBefore(msg, (document.body || document.documentElement).firstChild);
+    return;
+  }
+  document.documentElement.lang = lang;
+
+  var s = snapshot || {};
+  var callId = typeof s.callId === 'string' && s.callId ? s.callId : 'ask';
+  var header = typeof s.header === 'string' ? s.header : '';
+  var questions = [];
+  if (Object.prototype.toString.call(s.questions) === '[object Array]') {
+    for (var i = 0; i < s.questions.length; i += 1) {
+      var q = s.questions[i];
+      if (!q || typeof q !== 'object' || typeof q.question !== 'string' || !q.question) continue;
+      var opts = [];
+      if (Object.prototype.toString.call(q.options) === '[object Array]') {
+        for (var j = 0; j < q.options.length; j += 1) {
+          var o = q.options[j];
+          if (o && typeof o === 'object' && typeof o.label === 'string' && o.label) {
+            opts.push({ label: o.label, description: typeof o.description === 'string' ? o.description : '' });
+          }
+        }
+      }
+      questions.push({
+        id: typeof q.id === 'string' && q.id ? q.id : 'q' + questions.length,
+        question: q.question,
+        header: typeof q.header === 'string' ? q.header : '',
+        options: opts,
+        multiSelect: q.multiSelect === true
+      });
+    }
+  }
+  var api = window.card;
+  var elBadge = document.getElementById('ask-badge');
+  var elLive = document.getElementById('ask-live');
+  var elDone = document.getElementById('ask-done');
+  var elActions = document.getElementById('ask-actions');
+  var elPager = document.getElementById('ask-pager');
+  var elNotice = document.getElementById('ask-notice');
+  document.getElementById('ask-card-label').textContent = t('card', { name: asker });
+  document.getElementById('ask-title').textContent = header || t('card', { name: asker });
+
+  var paged = questions.length > 1;
+  var page = 0;
+  var elSubmit = null, elSkip = null, elPrev = null, elNext = null;
+
+  var submitted = null;   // { answers, at }
+  var skippedQ = {};       // question id -> true once the user skips that question
+  var emitOk = false;
+  var stateOk = false;
+  var trackOk = false;
+  var hydrated = false;    // the persisted record has been read
+
+  function setBadge(kind, text) {
+    elBadge.className = 'ask-badge' + (kind ? ' is-' + kind : '');
+    elBadge.textContent = text;
+  }
+  function buildQBox(q) {
+    var box = document.createElement('div');
+    box.className = 'ask-q';
+    box.setAttribute('data-qbox', q.id);
+    var head = document.createElement('div');
+    head.className = 'ask-q-head';
+    var headLeft = document.createElement('div');
+    if (q.header) {
+      var h = document.createElement('p');
+      h.className = 'ask-q-header';
+      h.textContent = q.header;
+      headLeft.appendChild(h);
+    }
+    head.appendChild(headLeft);
+    box.appendChild(head);
+    var skipBanner = document.createElement('span');
+    skipBanner.className = 'ask-skip-banner';
+    skipBanner.textContent = t('skippedBanner');
+    box.appendChild(skipBanner);
+    var text = document.createElement('p');
+    text.className = 'ask-q-text';
+    text.textContent = q.question;
+    box.appendChild(text);
+    if (q.multiSelect && q.options.length) {
+      var hint = document.createElement('p');
+      hint.className = 'ask-hint';
+      hint.textContent = t('multiHint');
+      box.appendChild(hint);
+    }
+    var group = 'ask-' + callId + '-' + q.id;
+    for (var j = 0; j < q.options.length; j += 1) {
+      var opt = q.options[j];
+      var row = document.createElement('label');
+      row.className = 'ask-opt';
+      var input = document.createElement('input');
+      input.type = q.multiSelect ? 'checkbox' : 'radio';
+      input.name = group;
+      input.value = opt.label;
+      input.setAttribute('aria-label', opt.label);
+      var wrap = document.createElement('span');
+      var label = document.createElement('span');
+      label.className = 'ask-opt-label';
+      label.textContent = opt.label;
+      wrap.appendChild(label);
+      if (opt.description) {
+        var desc = document.createElement('span');
+        desc.className = 'ask-opt-desc';
+        desc.style.display = 'block';
+        desc.textContent = opt.description;
+        wrap.appendChild(desc);
+      }
+      row.appendChild(input);
+      row.appendChild(wrap);
+      box.appendChild(row);
+    }
+    var custom = document.createElement('textarea');
+    custom.className = 'ask-custom';
+    custom.rows = 1;
+    custom.setAttribute('data-q', q.id);
+    custom.setAttribute('aria-label', q.question);
+    custom.placeholder = q.options.length ? t('customHint') : t('customOnly');
+    box.appendChild(custom);
+    return box;
+  }
+
+  function showPage(index) {
+    page = Math.max(0, Math.min(questions.length - 1, index));
+    for (var i = 0; i < questions.length; i += 1) {
+      var box = elLive.querySelector('[data-qbox="' + questions[i].id + '"]');
+      if (box) box.hidden = i !== page;
+    }
+    elPager.hidden = !paged;
+    if (paged) elPager.textContent = t('pageOf', { n: page + 1, total: questions.length });
+    var last = page >= questions.length - 1;
+    if (elPrev) elPrev.hidden = page === 0;
+    if (elNext) elNext.hidden = last;
+    if (elSubmit) elSubmit.hidden = !last;
+    elSkip.textContent = skippedQ[questions[page].id] ? t('resumeQ') : t('skip');
+  }
+
+  function buildLive() {
+    elLive.textContent = '';
+    for (var i = 0; i < questions.length; i += 1) {
+      elLive.appendChild(buildQBox(questions[i]));
+    }
+    showPage(0);
+  }
+
+  function collectAnswers() {
+    var answers = [];
+    for (var i = 0; i < questions.length; i += 1) {
+      var q = questions[i];
+      var selected = [];
+      var custom = '';
+      if (!skippedQ[q.id]) {
+        var inputs = elLive.querySelectorAll('input[name="ask-' + callId + '-' + q.id + '"]:checked');
+        for (var j = 0; j < inputs.length; j += 1) selected.push(inputs[j].value);
+        var field = elLive.querySelector('textarea[data-q="' + q.id + '"]');
+        if (field) custom = field.value.trim();
+      }
+      var item = { id: q.id, selected: selected };
+      if (custom) item.custom = custom;
+      answers.push(item);
+    }
+    return answers;
+  }
+
+  function answerLine(q, a) {
+    if (!a.selected.length && !a.custom) return t('skipped');
+    var parts = [];
+    if (a.selected.length) parts.push(a.selected.join('、'));
+    if (a.custom) parts.push(a.custom);
+    return parts.join(' — ');
+  }
+
+  function renderDone() {
+    elLive.hidden = true;
+    elActions.hidden = true;
+    elPager.hidden = true;
+    elDone.hidden = false;
+    elDone.textContent = '';
+    var anyAnswer = false;
+    for (var i = 0; i < questions.length; i += 1) {
+      var q = questions[i];
+      var a = null;
+      for (var j = 0; j < submitted.answers.length; j += 1) {
+        if (submitted.answers[j].id === q.id) { a = submitted.answers[j]; break; }
+      }
+      if (!a) a = { id: q.id, selected: [] };
+      if (a.selected.length || (a.custom && a.custom.length)) anyAnswer = true;
+      var item = document.createElement('div');
+      item.className = 'ask-answer';
+      var qEl = document.createElement('p');
+      qEl.className = 'ask-answer-q';
+      qEl.textContent = q.question;
+      var aEl = document.createElement('p');
+      aEl.className = 'ask-answer-a';
+      aEl.textContent = answerLine(q, a);
+      item.appendChild(qEl);
+      item.appendChild(aEl);
+      elDone.appendChild(item);
+    }
+    setBadge('done', anyAnswer ? t('submitted') : t('skipped'));
+    var meta = document.createElement('div');
+    meta.className = 'ask-meta';
+    var stamp = document.createElement('span');
+    stamp.textContent = t('answeredAt', { time: submitted.at });
+    meta.appendChild(stamp);
+    elDone.appendChild(meta);
+  }
+
+  function nowClock() {
+    var d = new Date();
+    return (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+  }
+
+  function persistSubmitted(record) {
+    if (!stateOk || !api || !api.state) return;
+    var write = api.state.set('submitted', record);
+    if (write && typeof write.catch === 'function') write.catch(function () {});
+  }
+
+  function setQuestionSkipped(id, on) {
+    if (submitted) return;
+    if (on) skippedQ[id] = true; else delete skippedQ[id];
+    var box = elLive.querySelector('[data-qbox="' + id + '"]');
+    if (!box) return;
+    box.className = on ? 'ask-q is-skipped' : 'ask-q';
+  }
+
+  function submit() {
+    if (!hydrated) return;   // the persisted record is not known yet
+    if (submitted) return;
+    if (!emitOk) return;
+    var answers = collectAnswers();
+    var payload = { callId: callId, answers: answers };
+    var record = { answers: answers, at: nowClock() };
+    var envelopeDone = function (envelope) {
+      var ok = envelope && envelope.ok === true;
+      if (ok) {
+        if (submitted) return;   // a stored record landed while the emit was in flight
+        submitted = record;
+        persistSubmitted(record);
+        if (trackOk && api && typeof api.track === 'function') {
+          var tr = api.track('answer', payload);
+          if (tr && typeof tr.catch === 'function') tr.catch(function () {});
+        }
+        renderDone();
+        elNotice.textContent = t('sent');
+      } else {
+        elNotice.textContent = t('sendFail');
+        elNotice.className = 'ask-notice is-warn';
+      }
+    };
+    var sent = api.emit('hana-ask-user.answer', payload);
+    if (sent && typeof sent.then === 'function') {
+      sent.then(envelopeDone, envelopeDone);
+    } else {
+      envelopeDone(null);
+    }
+  }
+
+  function buildActions() {
+    elActions.textContent = '';
+    var left = document.createElement('div');
+    left.className = 'ask-actions-left';
+    var right = document.createElement('div');
+    right.className = 'ask-actions-right';
+    elActions.appendChild(left);
+    elActions.appendChild(right);
+    elSkip = document.createElement('button');
+    elSkip.type = 'button';
+    elSkip.className = 'ask-skip';
+    elSkip.textContent = t('skip');
+    elSkip.addEventListener('click', function () {
+      var q = questions[page];
+      var on = !skippedQ[q.id];
+      setQuestionSkipped(q.id, on);
+      elSkip.textContent = on ? t('resumeQ') : t('skip');
+      if (on && page < questions.length - 1) showPage(page + 1);
+    });
+    left.appendChild(elSkip);
+    if (paged) {
+      elPrev = document.createElement('button');
+      elPrev.type = 'button';
+      elPrev.className = 'ask-skip';
+      elPrev.textContent = t('prev');
+      elPrev.addEventListener('click', function () { showPage(page - 1); });
+      right.appendChild(elPrev);
+      elNext = document.createElement('button');
+      elNext.type = 'button';
+      elNext.className = 'ask-skip';
+      elNext.textContent = t('next');
+      elNext.addEventListener('click', function () { showPage(page + 1); });
+      right.appendChild(elNext);
+    } else {
+      elPrev = null;
+      elNext = null;
+    }
+    elSubmit = document.createElement('button');
+    elSubmit.type = 'button';
+    elSubmit.className = 'ask-submit';
+    elSubmit.textContent = t('submit');
+    elSubmit.addEventListener('click', function () { submit(); });
+    right.appendChild(elSubmit);
+  }
+
+  elSubmit = null;
+  elSkip = null;
+  buildActions();
+
+  function applyCapabilities() {
+    var live = emitOk && hydrated;
+    if (elSubmit) elSubmit.disabled = !live;
+    if (elSkip) elSkip.disabled = !live;
+    if (!submitted) {
+      if (!emitOk) {
+        elNotice.textContent = t('host');
+        elNotice.className = 'ask-notice is-warn';
+      } else {
+        setBadge('', t('waiting'));
+      }
+    }
+  }
+
+  // A stored record wins over the live form, so it is read before anything renders.
+  function hydrate(caps) {
+    var stateWord = caps && typeof caps.state === 'string' ? caps.state : '';
+    stateOk = stateWord === 'available' || stateWord === 'local_fallback';
+    var readFinished = function (stored) {
+      if (stored && typeof stored === 'object' && Object.prototype.toString.call(stored.answers) === '[object Array]') {
+        submitted = stored;
+      }
+      hydrated = true;
+      buildLive();
+      applyCapabilities();
+      if (submitted) renderDone();
+    };
+    if (stateOk && api && api.state && typeof api.state.get === 'function') {
+      api.state.get('submitted').then(function (env) {
+        readFinished(env && env.ok === true && env.result ? env.result.value : null);
+      }, function () { readFinished(null); });
+    } else {
+      readFinished(null);
+    }
+  }
+
+  if (api && typeof api.capabilities === 'function') {
+    api.capabilities().then(function (envelope) {
+      var result = envelope && envelope.ok === true ? envelope.result : null;
+      var caps = result && result.capabilities ? result.capabilities : null;
+      var word = caps && typeof caps.emit === 'string' ? caps.emit : '';
+      emitOk = word === 'available';
+      var trackEntry = caps && caps.track;
+      trackOk = !!(trackEntry && typeof trackEntry === 'object' && (trackEntry.status === 'available' || trackEntry.status === 'local_fallback'));
+      hydrate(caps);
+      applyCapabilities();
+    }, function () {
+      hydrate(null);
+      applyCapabilities();
+    });
+  } else {
+    hydrate(null);
+    applyCapabilities();
+  }
+})();
+</script>
+</body>
+</html>

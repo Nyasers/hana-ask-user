@@ -84,6 +84,9 @@ Mint conventions:
 - `asker` is optional: the name this Agent goes by in the conversation's
   language. The card writes it into its own title and, when it is omitted,
   falls back to that language's default name (小花 / Hanako / 花子 / 하나코).
+- `submitted` belongs to the card, not to the mint: after Submit the card
+  writes its own record of the set (`answers`, `at`) into that state field, so
+  a reopened card shows what was answered. Do not send it.
 - Questions without `options` render a free-text field; with `options` the
   free text becomes an optional supplement or custom answer.
 - Keep question ids stable: they are echoed in the answer and let you match
@@ -99,8 +102,9 @@ On submit the card emits `hana-ask-user.answer` and the Agent wakes:
   "answers": [ { "id": "regression", "selected": ["Run it first (Recommended)"], "custom": "Also check the bundle size" } ] }
 ```
 
-- `selected` holds option labels; `custom` holds free text; either may be
-  empty.
+- `selected` holds option labels; `custom` holds free text. `selected` is an
+  array, empty when nothing was picked; `custom` is omitted when there is no
+  text.
 - An answer item with empty `selected` and no `custom` means the user
   deliberately skipped that question — a completed set, not silence. Do not
   re-ask.

@@ -55,7 +55,7 @@ The mint's `state` replaces the template defaults; send the whole object:
   "uiLanguage": "en",            // from the conversation: zh, zh-TW, en, ja, ko
   "callId": "deploy-check",      // stable id, unique among this session's asks
   "header": "Release checklist", // optional card heading
-  "asker": "Hanako",            // optional: the asking Agent's own name, in the card's language
+  "asker": "Hanako",             // optional: the asking Agent's own name, in the card's language
   "questions": [
     {
       "id": "regression",        // stable, unique within the set
@@ -65,6 +65,10 @@ The mint's `state` replaces the template defaults; send the whole object:
         { "label": "Run it first (Recommended)", "description": "Ten more minutes for peace of mind" }
       ],
       "multiSelect": false       // optional
+    },
+    {
+      "id": "note",              // stable, unique within the set
+      "question": "Anything to watch for in this release?"    // no options: a free-text answer
     }
   ]
 }

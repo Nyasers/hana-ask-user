@@ -53,23 +53,23 @@ The mint's `state` replaces the template defaults; send the whole object:
 ```
 {
   "uiLanguage": "en",            // from the conversation: zh, zh-TW, en, ja, ko
-  "callId": "deploy-check",      // stable id, unique among this session's asks
-  "header": "Release checklist", // optional card heading
+  "callId": "dinner-plan",       // stable id, unique among this session's asks
+  "header": "Tonight",           // optional card heading
   "asker": "Hanako",             // optional: the asking Agent's own name, in the card's language
   "questions": [
     {
-      "id": "regression",        // stable, unique within the set
-      "question": "Run a regression pass before releasing?",   // self-contained, user-facing words
-      "header": "Release path",  // optional per-question label
+      "id": "dinner",            // stable, unique within the set
+      "question": "What should we have for dinner tonight?",   // self-contained, user-facing words
+      "header": "Dinner",        // optional per-question label
       "options": [               // optional; omit for a free-text answer
-        { "label": "Run it first (Recommended)", "description": "Ten more minutes for peace of mind" },
-        { "label": "Ship it now", "description": "In a hurry; roll back if it breaks" }
+        { "label": "Cook at home (Recommended)", "description": "Simple, and we eat sooner" },
+        { "label": "Order in", "description": "No dishes, a little more expensive" }
       ],
       "multiSelect": false       // optional
     },
     {
       "id": "note",              // stable, unique within the set
-      "question": "Anything to watch for in this release?"    // no options: a free-text answer
+      "question": "Anything you want with it?"    // no options: a free-text answer
     }
   ]
 }

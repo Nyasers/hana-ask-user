@@ -37,24 +37,24 @@
 </script>
 <script type="application/json" data-card-state>
 {
-  "uiLanguage": "zh",
+  "uiLanguage": "en",
   "callId": "deploy-check",
-  "header": "发布检查点",
-  "asker": "小花",
+  "header": "Release checklist",
+  "asker": "Hanako",
   "questions": [
     {
       "id": "regression",
-      "question": "发布前要先跑一轮回归吗？",
-      "header": "发布方式",
+      "question": "Run a regression pass before releasing?",
+      "header": "Release path",
       "options": [
-        { "label": "先跑回归（推荐）", "description": "多花十分钟，换一份安心" },
-        { "label": "直接发布", "description": "赶时间，出问题再回滚" }
+        { "label": "Run it first (Recommended)", "description": "Ten more minutes for peace of mind" },
+        { "label": "Ship it now", "description": "In a hurry; roll back if it breaks" }
       ],
       "multiSelect": false
     },
     {
       "id": "note",
-      "question": "这次发布有什么要特别留意的？",
+      "question": "Anything to watch for in this release?",
       "multiSelect": false
     }
   ]

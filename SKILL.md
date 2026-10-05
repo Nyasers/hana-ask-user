@@ -62,7 +62,8 @@ The mint's `state` replaces the template defaults; send the whole object:
       "question": "Run a regression pass before releasing?",   // self-contained, user-facing words
       "header": "Release path",  // optional per-question label
       "options": [               // optional; omit for a free-text answer
-        { "label": "Run it first (Recommended)", "description": "Ten more minutes for peace of mind" }
+        { "label": "Run it first (Recommended)", "description": "Ten more minutes for peace of mind" },
+        { "label": "Ship it now", "description": "In a hurry; roll back if it breaks" }
       ],
       "multiSelect": false       // optional
     },
